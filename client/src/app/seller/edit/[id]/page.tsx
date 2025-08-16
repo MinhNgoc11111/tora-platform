@@ -3,9 +3,11 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-export function EditProductPage() {
+// NOTE: Giữ alias để không ảnh hưởng code, nhưng KHÔNG export ra ngoài
+function EditProductPage() {
   return <ProductEditForm />;
 }
+
 
 interface Product {
   name: string;
