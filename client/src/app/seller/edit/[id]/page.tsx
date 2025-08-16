@@ -3,11 +3,10 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-// NOTE: Giữ alias để không ảnh hưởng code, nhưng KHÔNG export ra ngoài
+// Alias chỉ dùng nội bộ (KHÔNG export) — tránh vi phạm quy tắc Page exports của Next.js
 function EditProductPage() {
   return <ProductEditForm />;
 }
-
 
 interface Product {
   name: string;
@@ -19,8 +18,8 @@ interface Product {
 
 export default function ProductEditForm() {
   const params = useParams();
-  const idParam = (params as any)?.id;
-  const id = Number(Array.isArray(idParam) ? idParam[0] : idParam ?? 0);
+  const rawId = (params as Record<string, string | string[] | undefined>)?.id;
+  const id = Number(Array.isArray(rawId) ? rawId[0] : rawId);
 
   const router = useRouter();
   const [product, setProduct] = useState<Product>({
@@ -32,33 +31,45 @@ export default function ProductEditForm() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Nếu id không hợp lệ, dừng luôn
+    if (!Number.isFinite(id) || id <= 0) {
+      setError("ID sản phẩm không hợp lệ.");
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       try {
-        const res = await fetch(`/api/products/id/${id}`, { cache: "no-store" });
-
+        // Browser fetch: cứ gọi bình thường; cache: "no-store" không bắt buộc, vẫn OK
+        const res = await fetch(`/api/products/id/${id}`);
         if (!res.ok) throw new Error("Không thể tải sản phẩm");
-        const data = await res.json();
 
+        const data = await res.json();
         setProduct({
           name: data?.name ?? "",
-          // ⚠️ Ép number vì server có thể trả Decimal/string
+          // Ép number vì có thể server trả về Decimal/string
           price: Number(data?.price ?? 0),
-          // Nếu bạn đã migrate sang categoryId, có thể bỏ field category
+          // Nếu bạn đã migrate sang categoryId thì bỏ field này sau
           category: data?.category ?? "",
           description: data?.description ?? "",
           imageUrl: data?.imageUrl ?? data?.image ?? "",
         });
-      } catch (err: any) {
-        alert(err?.message || "Lỗi không xác định");
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Lỗi không xác định";
+        setError(msg);
       } finally {
         setLoading(false);
       }
     })();
   }, [id]);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setProduct((prev) => ({
       ...prev,
@@ -68,6 +79,11 @@ export default function ProductEditForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!Number.isFinite(id) || id <= 0) {
+      alert("ID sản phẩm không hợp lệ.");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch(`/api/products/id/${id}`, {
@@ -75,27 +91,29 @@ export default function ProductEditForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...product,
-          price: Number(product.price), // đảm bảo gửi number
+          price: Number(product.price), // đảm bảo number
         }),
       });
 
-      // Debug (nếu cần)
-      console.log("PUT status:", res.status);
-      const text = await res.text();
-      console.log("PUT response body:", text);
+      // Debug nếu cần
+      // console.log("PUT status:", res.status);
+      // console.log("PUT response body:", await res.text());
 
       if (!res.ok) throw new Error(`Cập nhật thất bại: ${res.status}`);
 
-      // ✅ Ép trang danh sách refetch chắc chắn
+      // Ép refetch chắc chắn trang danh sách
       router.replace(`/seller/products?refresh=${Date.now()}`);
-    } catch (err: any) {
-      alert(err?.message || "Lỗi khi lưu sản phẩm");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Lỗi khi lưu sản phẩm";
+      alert(msg);
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) return <p>Đang tải sản phẩm...</p>;
+  if (error) return <p className="text-red-600">{error}</p>;
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl mx-auto p-4">
@@ -118,6 +136,7 @@ export default function ProductEditForm() {
         <input
           type="number"
           name="price"
+          step="0.01"
           value={Number(product.price)}
           onChange={handleChange}
           className="w-full border px-3 py-2 rounded"
