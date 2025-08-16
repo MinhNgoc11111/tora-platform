@@ -1,0 +1,284 @@
+// =========================
+// PRISMA CONFIG
+// =========================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * =========================
+ * USER & AUTH
+ * =========================
+ */
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  image         String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailVerified DateTime?
+
+  // Quan hệ
+  orders              Order[]
+  verificationTokens  VerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  addresses           Address[]
+  termsAcceptances    TermsAcceptance[]
+
+  // Ghi nhận phiên bản ToS đã đồng ý (tùy chọn)
+  termsVersion    String?
+  termsAcceptedAt DateTime?
+
+  @@index([createdAt])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+/**
+ * =========================
+ * EMAIL TOKENS
+ * =========================
+ */
+
+model VerificationToken {
+  id      String   @id @default(cuid())
+  token   String   @unique
+  userId  String
+  expires DateTime
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model PendingUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String // đã hash sẵn
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expires])
+}
+
+/**
+ * (Tùy chọn) Quên mật khẩu
+ */
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  token   String   @unique
+  userId  String
+  expires DateTime
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+/**
+ * =========================
+ * LEGAL / AUDIT
+ * =========================
+ */
+
+model PurgeLog {
+  id          String   @id @default(cuid())
+  adminEmail  String
+  targetEmail String
+  deletedType String // "pending" | "user"
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/**
+ * Ghi nhận đồng ý Điều khoản (theo phiên bản)
+ */
+model TermsAcceptance {
+  id         String   @id @default(cuid())
+  userId     String
+  version    String
+  acceptedAt DateTime @default(now())
+  ip         String?
+  userAgent  String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Mỗi user chỉ chấp thuận 1 lần cho mỗi version
+  @@unique([userId, version])
+  @@index([userId])
+}
+
+/**
+ * =========================
+ * CATALOG
+ * =========================
+ */
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Int // VND dạng số nguyên
+  // (legacy) trường category dạng text — migrate dần sang categoryId
+  category    String? // DEPRECATED: dùng Category quan hệ
+  image       String // ảnh đại diện
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Bổ sung
+  slug     String  @unique
+  sku      String? @unique
+  stock    Int     @default(0) // ✅ nguồn chân lý duy nhất về tồn kho
+  isActive Boolean @default(true)
+
+  // (Tuỳ chọn) ngưỡng cảnh báo sắp hết – nếu null thì dùng default ở app
+  lowStockThreshold Int?
+
+  // Quan hệ Category (mới)
+  categoryId  Int?
+  categoryRel Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // Ảnh bổ sung
+  images ProductImage[]
+
+  // Ledger tồn kho (audit)
+  stockLedgers StockLedger[]
+
+  @@index([createdAt])
+  @@index([categoryId])
+  @@index([isActive, stock]) // ✅ phục vụ lọc/đếm nhanh theo trạng thái còn/hết
+  @@index([stock])
+  @@index([slug])
+  @@index([sku])
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  url       String
+  alt       String?
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId, sort])
+}
+
+/**
+ * =========================
+ * INVENTORY LEDGER (chuẩn hoá tồn kho)
+ * =========================
+ */
+
+enum StockReason {
+  ORDER // bán/đặt hàng (xuất)
+  CANCEL // huỷ đơn (nhập bù)
+  MANUAL_IN // nhập kho thủ công
+  MANUAL_OUT // xuất kho thủ công
+  RETURN // khách trả hàng
+  ADJUST // điều chỉnh kiểm kê
+}
+
+model StockLedger {
+  id        String  @id @default(cuid())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // +delta: nhập kho; -delta: xuất kho
+  delta     Int
+  reason    StockReason
+  refId     String? // ví dụ: orderId/adjustmentId
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([productId, createdAt])
+}
+
+/**
+ * =========================
+ * ORDERS / CHECKOUT
+ * =========================
+ */
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // Giữ nguyên: items JSON (line items snapshot)
+  items      Json
+  totalPrice Int
+  currency   String   @default("VND")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Bổ sung: trạng thái & thanh toán/vận chuyển
+  status       OrderStatus @default(PENDING)
+  paymentProv  String? // "stripe", ...
+  paymentRef   String? // paymentIntentId/chargeId...
+  shippingAddr Json? // snapshot địa chỉ giao hàng lúc đặt
+  note         String?
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+/**
+ * =========================
+ * ADDRESS BOOK
+ * =========================
+ */
+
+model Address {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  province   String?
+  postalCode String
+  country    String   @default("VN")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, isDefault])
+}

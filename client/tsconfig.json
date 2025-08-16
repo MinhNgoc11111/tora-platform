@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    /* ---------- Môi trường & chuẩn JS ---------- */
+    "target": "ES2021",
+    "lib": ["dom", "dom.iterable", "es2021"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+
+    /* ---------- Chất lượng & tốc độ ---------- */
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "incremental": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* ---------- Tương thích Next/Node ---------- */
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "types": ["node", "next-auth"],         
+
+    /* ---------- Next.js plugin ---------- */
+    "plugins": [{ "name": "next" }],
+
+    /* ---------- Alias import ---------- */
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["*"],
+      "@/components/*": ["components/*"],
+      "@/lib/*": ["lib/*"],
+      "@/types": ["types/index.ts"]
+    },
+
+    /* ---------- Tuỳ chọn JS ---------- */
+    "allowJs": true
+  },
+
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/types.ts",
+    "src/types/**/*"
+  ],
+  "exclude": ["node_modules"]
+}

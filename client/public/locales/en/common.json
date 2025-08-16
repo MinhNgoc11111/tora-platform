@@ -1,0 +1,33 @@
+{
+  "banner": {
+    "title": "Welcome to TORA 🐯",
+    "subtitle": "Connecting sellers & buyers across Japan"
+  },
+  "category": {
+    "title": "Categories",
+    "fashion": "Fashion",
+    "electronics": "Electronics",
+    "beauty": "Beauty",
+    "home": "Home",
+    "mom_baby": "Mom & Baby",
+    "sport": "Sports"
+  },
+  "flash": {
+    "title": "FLASH SALE",
+    "view_all": "View All >",
+    "hot_selling": "HOT SALE",
+    "only_left": "ONLY {{count}} LEFT"
+  },
+  "product": {
+    "shirt": "Uniqlo T-shirt",
+    "headphone": "Sony Headphones",
+    "lipstick": "Japanese Lipstick"
+  },
+  "search_placeholder": "What are you looking for today?",
+  "cart": "Cart",
+  "history": "History",
+  "favorite": "Favorites",
+  "coupon": "My Coupons",
+  
+  "seller_portal": "Seller Center"
+}

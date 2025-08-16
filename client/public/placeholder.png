@@ -1,0 +1,2 @@
+import Image from "next/image";
+<Image src="/placeholder.png" width={600} height={400} alt="No image" />

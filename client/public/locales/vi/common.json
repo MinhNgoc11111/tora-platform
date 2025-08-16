@@ -1,0 +1,34 @@
+{
+  "banner": {
+    "title": "Chào mừng đến với TORA 🐯",
+    "subtitle": "Nơi kết nối người bán & người mua toàn Nhật Bản"
+  },
+  "category": {
+    "title": "Danh mục",
+    "fashion": "Thời trang",
+    "electronics": "Điện tử",
+    "beauty": "Mỹ phẩm",
+    "home": "Gia dụng",
+    "mom_baby": "Mẹ & Bé",
+    "sport": "Thể thao"
+  },
+  "flash": {
+    "title": "FLASH SALE",
+    "view_all": "Xem tất cả >",
+    "hot_selling": "ĐANG BÁN CHẠY",
+    "only_left": "CHỈ CÒN {{count}}"
+  },
+  "product": {
+    "shirt": "Áo thun Uniqlo",
+    "headphone": "Tai nghe Sony",
+    "lipstick": "Son môi Nhật"
+  },
+  "search_placeholder": "Bạn muốn tìm gì hôm nay?",
+  "cart": "Giỏ hàng",
+  "history": "Lịch sử",
+  "favorite": "Yêu thích",
+  "coupon": "Ưu đãi của tôi",
+
+  "seller_portal": "Kênh người bán"
+  
+}
