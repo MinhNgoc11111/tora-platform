@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
+import type { MutableRefObject } from "react";
 import { useInView } from "react-intersection-observer";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,7 +17,7 @@ interface CartPopupProps {
 export default function CartPopup({ onClose }: CartPopupProps) {
   const { cart, removeFromCart, clearCart, updateQuantity } = useCart();
   const router = useRouter();
-  const popupRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement | null>(null) as MutableRefObject<HTMLDivElement | null>;
 
   const totalPrice = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -47,7 +48,7 @@ export default function CartPopup({ onClose }: CartPopupProps) {
     threshold: 0.2,
   });
 
-  const setRefs = (el: HTMLDivElement) => {
+  const setRefs = (el: HTMLDivElement | null) => {
     popupRef.current = el;
     inViewRef(el);
   };
