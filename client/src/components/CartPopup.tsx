@@ -79,8 +79,8 @@ export default function CartPopup({ onClose }: CartPopupProps) {
                 {/* 👉 Ảnh sản phẩm có thể bấm */}
                 <Link href={`/product/${item.id}`} onClick={onClose}>
                   <img
-                    src={item.image}
-                    alt={item.name}
+                    src={item.image ?? (item as any).imageUrl ?? "/placeholder.png"}
+                    alt={item.name ?? "Sản phẩm"}
                     className="w-14 h-14 rounded object-cover"
                   />
                 </Link>
