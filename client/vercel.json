@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "crons": [
+    {
+      "path": "/api/admin/alerts/low-stock",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}
